@@ -15,7 +15,7 @@ public Plugin myinfo =
     author = "Jack Thatcher",
     description = "",
     version = "0.1",
-    url = "https://github.com/jackthatch/css-ssj"
+    url = "https://github.com/jackthatch/source-ssj"
 };
 
 public void OnPluginStart()
