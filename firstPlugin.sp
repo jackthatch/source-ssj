@@ -11,7 +11,7 @@ public Plugin myinfo =
     author = "Jack Thatcher",
     description = "",
     version = "0.1",
-    url = "https://github.com/jackthatch/source-ssj"
+    url = "https://github.com/jackthatch/css-ssj"
 };
 
 public void OnPluginStart()
@@ -23,11 +23,6 @@ public void OnPluginStart()
     }
 }
 
-float g_PlayerPrevViewAngle[3];
-const int MAX_TICKS = 5;
-float g_LastFiveViewAngleDiffs[MAX_TICKS];
-int g_NumStoredTicks = 0;
-
 float GetClientVelocity(int client)
 {
     float velocity[3];
@@ -38,97 +33,62 @@ float GetClientVelocity(int client)
     return GetVectorLength(velocity);
 }
 
-void CalculateViewAngleDiff(float currentViewAngleDiff)
+float GetClientAngles(int client)
 {
-    if (g_NumStoredTicks < MAX_TICKS)
+    float V_angles[3];
+    int res;
+	
+	//Getting same values here need to sleep for 1 or 2 ticks between each line
+    V_angles[0] = GetEntPropFloat(client, Prop_Send, "m_angEyeAngles[1]");
+    V_angles[1] = GetEntPropFloat(client, Prop_Send, "m_angEyeAngles[1]");
+    V_angles[2] = GetEntPropFloat(client, Prop_Send, "m_angEyeAngles[1]");
+
+    if (V_angles[0] < V_angles[1] && V_angles[1] < V_angles[2])    // Turning right
     {
-        g_LastFiveViewAngleDiffs[g_NumStoredTicks] = currentViewAngleDiff;
-        g_NumStoredTicks++;
+        res = 0;
+    }
+    else if (V_angles[0] > V_angles[1] && V_angles[1] > V_angles[2])   // Turning left
+    {
+        res = 1;
     }
     else
     {
-        for (int i = 1; i < MAX_TICKS; i++)
-        {
-            g_LastFiveViewAngleDiffs[i - 1] = g_LastFiveViewAngleDiffs[i];
-        }
-        g_LastFiveViewAngleDiffs[MAX_TICKS - 1] = currentViewAngleDiff;
+        res = 2;   // Not Turning
     }
+
+	 PrintToChat(client, "[JThatch Shit Strafer]: 0: %.2f, 1: %.2f, 2: %.2f", V_angles[0], V_angles[1], V_angles[2]);
+    return res;
 }
-
-float CalculateTotalViewAngleDiff()
-{
-    float totalDiff = 0.0;
-    for (int i = 0; i < g_NumStoredTicks; i++)
-    {
-        totalDiff += g_LastFiveViewAngleDiffs[i];
-    }
-    return totalDiff;
-}
-
-const float VIEW_ANGLE_THRESHOLD = 0.1; // Adjust this threshold value as needed
-
-float NormalizeAngle(float angle)
-{
-    while (angle > 180.0)
-    {
-        angle -= 360.0;
-    }
-    while (angle < -180.0)
-    {
-        angle += 360.0;
-    }
-    return angle;
-}
-
-float CustomFloatAbs(float num)
-{
-    return num >= 0 ? num : -num;
-}
-
 
 public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3], float angles[3], int &weapon, int &subtype, int &cmdnum, int &tickcount, int &seed, int mouse[2])
 {
     bool isOnGround = (GetEntityFlags(client) & FL_ONGROUND) != 0;
     bool isJumping = (buttons & IN_JUMP) != 0;
 
+    if (isJumping)
+    {
+        int direction = GetClientAngles(client);
+        if (direction == 0)
+        {
+            PrintToChat(client, "[JThatch Shit Strafer]: Turning right");
+        }
+        else if (direction == 1)   // Use "else if" for the second condition
+        {
+            PrintToChat(client, "[JThatch Shit Strafer]: Turning left");
+        }
+        else
+        {
+            PrintToChat(client, "[JThatch Shit Strafer]: Not Turning !");
+        }
+    }
+
     if (isOnGround && isJumping)
     {
         float speed = GetClientVelocity(client);
         PrintToChat(client, "[Speed]: You landed on the ground with a speed of %.2f", speed);
-    }
 
-    float viewAngleDiff[3];
-    viewAngleDiff[0] = angles[0] - g_PlayerPrevViewAngle[0];
-    viewAngleDiff[1] = angles[1] - g_PlayerPrevViewAngle[1];
-
-    viewAngleDiff[1] = NormalizeAngle(viewAngleDiff[1]);
-
-    g_PlayerPrevViewAngle[0] = angles[0];
-    g_PlayerPrevViewAngle[1] = angles[1];
-
-    CalculateViewAngleDiff(viewAngleDiff[1]);
-
-    if (g_NumStoredTicks >= MAX_TICKS)
-    {
-        float totalViewAngleDiff = CalculateTotalViewAngleDiff();
-
-        // Determine the more common result (left or right)
-
-        if (CustomFloatAbs(totalViewAngleDiff) > VIEW_ANGLE_THRESHOLD)
-        {
-            if (totalViewAngleDiff > 0)
-            {
-                PrintToChat(client, "[Turn Direction]: You are turning left");
-            }
-            else
-            {
-                PrintToChat(client, "[Turn Direction]: You are turning right");
-            }
-        }
-        else
-        {
-            PrintToChat(client, "[Turn Direction]: You are turning straight");
-        }
+        float VA = GetEntPropFloat(client, Prop_Send, "m_angEyeAngles[1]");
+        PrintToChat(client, "[Speed]: Current angle:  %.2f", VA);
     }
 
     return Plugin_Continue;
