@@ -37,6 +37,8 @@ float GetClientAngles(int client)
 {
     float V_angles[3];
     int res;
+
+	//normalize these angle from 0-360deg rather than 0-> 180 -> -180 -> 0
 	
 	//Getting same values here need to sleep for 1 or 2 ticks between each line
     V_angles[0] = GetEntPropFloat(client, Prop_Send, "m_angEyeAngles[1]");
